@@ -1,0 +1,151 @@
+* {
+  padding: 0;
+  margin: 0;
+}
+ul, ol {
+  list-style: none;
+}
+::-webkit-scrollbar
+{
+    width: 5px;
+    height: 5px;
+    background-color: #F5F5F5;
+    cursor: pointer;
+}
+/*定义滚动条轨道 内阴影+圆角*/
+::-webkit-scrollbar-track
+{
+    box-shadow: inset 0 0 1px rgba(0,0,0, 0);
+    border-radius: 10px;
+    background-color: #F5F5F5;
+    cursor: pointer;
+}
+
+/*定义滑块 内阴影+圆角*/
+::-webkit-scrollbar-thumb
+{
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0, .3);
+    background-color: rgb(192, 192, 192)
+}
+
+$padding-tb: 24px;
+@mixin calcHeight() {
+  height: calc(100vh - 48px - 294px);
+}
+#app {
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: left;
+  background: #ededed;
+  padding: $padding-tb 60px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+#app .el-form-item__content {
+  display: flex;
+}
+#app .el-slider {
+  min-width: 212px;
+}
+.flex {
+  display: flex;
+  flex-direction: row;
+}
+.wrap {
+flex-wrap: wrap;
+}
+.column {
+  flex-direction: column;
+}
+.all-center {
+  align-items: center;
+  justify-content: center;
+}
+.justify-center {
+  align-items: center;
+}
+.align-center {
+  align-items: center;
+}
+.between {
+  justify-content: space-between;
+}
+.space {
+  justify-content: space-around;
+}
+.box {
+  box-sizing: border-box;
+}
+.relative {
+  position: relative;
+}
+
+.canvas {
+  position: absolute;
+  z-index: -1;
+  top: -10000px;
+}
+.input--section {
+  background: #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
+  padding: 20px;
+  width: 400px;
+  @include calcHeight;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .05)
+}
+.suggest-title {
+  text-align: left;
+  margin-bottom: 6px;
+  font-size: 20px;
+  color: #333;
+}
+.display-area {
+  margin-right: 60px;
+  overflow: auto;
+  @include calcHeight;
+}
+.suggest-section {
+  width: calc(100vw - 120px);
+  background: #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
+  padding: 20px;
+  overflow: auto;
+  margin-top: 12px;
+}
+.suggests {
+  /* overflow-x: auto; */
+  padding-bottom: 8px;
+}
+.suggest-item {
+  box-shadow: 0 0 0 rgba(0, 0, 0, .2);
+  transition: box-shadow .3s ease-in-out;
+}
+.suggest-item:hover {
+  cursor: pointer;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .2);
+  transition: box-shadow .3s ease-in-out;
+}
+.suggest-item+.suggest-item {
+  margin-left: 20px;
+}
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #666;
+}
+.close:hover {
+  color: #000;
+}
+.label {
+  color: #999;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 6px;
+  margin-bottom: 12px;
+}

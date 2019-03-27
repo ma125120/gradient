@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div class="flex between relative">
+    <div class="flex between relative main">
       <div class="display-area">
         <div class="canvas-div" :style="canvasStyle"></div>
         <canvas ref="canvas" class="canvas"></canvas>
@@ -10,11 +10,9 @@
         <el-form ref="form" :model="form" label-width="80px">
           <el-form-item label="宽度">
             <el-input-number v-model="form.width" :min="1" :max="20000"></el-input-number>
-            <!-- <el-input v-model="form.width"></el-input> -->
           </el-form-item>
           <el-form-item label="高度">
             <el-input-number v-model="form.height" :min="1" :max="20000"></el-input-number>
-            <!-- <el-input v-model="form.height"></el-input> -->
           </el-form-item>
           <el-form-item label="活动区域">
             <el-select v-model="form.direction" placeholder="请选择渐变方向">
@@ -27,11 +25,11 @@
           </el-form-item>
           <el-form-item label="开始颜色">
             <el-input v-model="form.startColor"></el-input>
-            <el-color-picker v-model="form.startColor"></el-color-picker>
+            <el-color-picker v-model="form.startColor" @active-change="changeColor($event, 'startColor')"></el-color-picker>
           </el-form-item>
           <el-form-item label="结束颜色">
             <el-input v-model="form.stopColor"></el-input>
-            <el-color-picker v-model="form.stopColor"></el-color-picker>
+            <el-color-picker v-model="form.stopColor" @active-change="changeColor($event, 'stopColor')"></el-color-picker>
           </el-form-item>
           <el-form-item label="图片名称">
             <el-input v-model="form.name"></el-input>
@@ -50,10 +48,17 @@
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="exportImg">导出图片</el-button>
+            <el-button @click="saveSetting">保存此配置</el-button>
           </el-form-item>
-        </el-form>
 
-        <!-- <el-button @click="">el-button</el-button> -->
+          <el-collapse v-model="activeNames">
+            <el-collapse-item title="css代码" name="1">
+              <div class="label">{{ getSuggestStyle(form) }}</div>
+              <el-button type="primary" @click="copy">复制代码</el-button>
+            </el-collapse-item>
+          </el-collapse>
+
+        </el-form>
       </div>
     </div>
 
@@ -61,31 +66,36 @@
       <h2 class="suggest-title">推荐配置</h2>
       <ul class="suggests flex" :style="`width: ${ 220 * gradients.length }px`">
         <li
-          class="suggest-item"
-          :style="getSuggestStyle(gradient)"
+          class="suggest-item relative"
           @click="setSuggest(gradient)"
           v-for="(gradient, i) in gradients"
-          :key="i"></li>
+          :key="i">
+          <div :style="getSuggestStyle(gradient)"></div>
+          <i class="el-icon-close close" @click="delGradient(i)"></i>
+        </li>
+        <li
+          class="suggest-item relative"
+          @click="setSuggest(gradient)"
+          v-for="(gradient, i) in defaultGradients"
+          :key="i + gradients.length">
+          <div :style="getSuggestStyle(gradient)"></div>
+        </li>
+
       </ul>
     </div>
+    <div id="empty"></div>
     <a ref="link" :href="href" :download="form.name + '.' + form.imgType"></a>
   </div>
 </template>
 
 <script>
 import gradients from '@/util/gradient.js'
-
-function dataURIToURL(dataURI) {
-  var binStr = atob(dataURI.split(',')[1]),
-    len = binStr.length,
-    arr = new Uint8Array(len);
-
-  for (var i = 0; i < len; i++) {
-    arr[i] = binStr.charCodeAt(i);
-  }
-
-  return URL.createObjectURL(new Blob([arr]));
-}
+import {
+  getStore,
+  setStore,
+  dataURIToURL
+} from '@/util/index.js';
+import copy from '@/util/copy.js'
 
 export default {
   name: 'app',
@@ -106,6 +116,7 @@ export default {
         quality: 100,
       },
       href: '',
+      activeNames: ['1'],
 
       directions: [
         { label: '从左到右', value: 'to right', },
@@ -122,7 +133,8 @@ export default {
         { label: 'png', value: 'png', },
         { label: 'jpg', value: 'jpg', },
       ],
-      gradients,
+      gradients: [],
+      defaultGradients: gradients,
     }
   },
   computed: {
@@ -133,8 +145,35 @@ export default {
   },
   created() {
     this.form = { ...this.form, ...gradients[0], };
+    this.gradients = (getStore() || []);
   },
   methods: {
+    copy() {
+      copy('#empty', this.getSuggestStyle(this.form));
+      this.$message({ message: '复制成功', type: 'success' });
+    },
+    saveSetting() {
+      var arr = getStore() || [];
+      var _gradients = [ this.form ].concat(arr);
+      this.saveToLocal(_gradients, '保存成功')
+    },
+    delGradient(i) {
+      var arr = getStore() || [];
+      var _gradients = [ ...arr ];
+      _gradients.splice(i, 1);
+      this.saveToLocal(_gradients, '删除成功');
+    },
+    saveToLocal(_gradients, message = '保存成功') {
+      setStore(_gradients);
+      this.gradients = _gradients;
+      this.$message({
+        message,
+        type: 'success'
+      });
+    },
+    changeColor(color, field, ) {
+      this.form[field] = color;
+    },
     exportImg() {
       var canvas = this.$refs.canvas;
       var { width = 400, height = width, direction, startColor, stopColor, imgType, quality } = this.form;
@@ -142,7 +181,7 @@ export default {
       canvas.width = width;
       canvas.height = height;
       var ctx = canvas.getContext("2d");
-      var grd = ctx.createLinearGradient(0, height, 0, 0);
+      var grd = ctx.createLinearGradient.apply(ctx, this.getPosition(direction, width, height));
       grd.addColorStop(0, startColor);
       grd.addColorStop(1, stopColor);
 
@@ -158,6 +197,22 @@ export default {
         link.click();
       }, 100);
     },
+    getPosition(direction, width, height) {
+      direction = direction.trim();
+      var pos = {
+        'to right': [ 0, 0, width, 0, ],
+        'to left': [ width, 0, 0, 0, ],
+        'to bottom': [ 0, 0, 0, height, ],
+        'to top': [ 0, height, 0, 0, ],
+
+        'to right bottom': [ 0, 0, width, height, ],
+        'to left bottom': [ width, 0, 0, height, ],
+        'to left top': [ width, height, 0, 0, ],
+        'to right top': [ 0, height, width, 0, ],
+      }
+
+      return pos[direction];
+    },
     getSuggestStyle(item) {
       var { direction, startColor, stopColor } = item;
       return `width: 200px; height: 200px; background: linear-gradient(${direction}, ${startColor}, ${stopColor});`
@@ -169,130 +224,6 @@ export default {
 }
 </script>
 
-<style>
-* {
-  padding: 0;
-  margin: 0;
-}
-ul, ol {
-  list-style: none;
-}
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  background: #ededed;
-  padding: 40px 60px;
-  min-height: 100vh;
-  box-sizing: border-box;
-}
-#app .el-form-item__content {
-  display: flex;
-}
-#app .el-slider {
-  min-width: 212px;
-}
-.flex {
-  display: flex;
-  flex-direction: row;
-}
-.wrap {
-flex-wrap: wrap;
-}
-.column {
-  flex-direction: column;
-}
-.all-center {
-  align-items: center;
-  justify-content: center;
-}
-.justify-center {
-  align-items: center;
-}
-.align-center {
-  align-items: center;
-}
-.between {
-  justify-content: space-between;
-}
-.space {
-  justify-content: space-around;
-}
-.box {
-  box-sizing: border-box;
-}
-
-.canvas {
-  position: absolute;
-  z-index: -1;
-  top: -10000px;
-}
-.input--section {
-  background: #fff;
-  border-radius: 6px;
-  box-sizing: border-box;
-  padding: 20px;
-  width: 400px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, .05)
-}
-.suggest-title {
-  text-align: left;
-  margin-bottom: 6px;
-  font-size: 20px;
-  color: #333;
-}
-.display-area {
-  margin-right: 60px;
-  overflow: auto;
-  height: calc(100vh - 80px - 294px);
-}
-.suggest-section {
-  width: calc(100vw - 120px);
-  background: #fff;
-  border-radius: 6px;
-  box-sizing: border-box;
-  padding: 20px;
-  overflow: auto;
-  margin-top: 12px;
-}
-.suggests {
-  /* overflow-x: auto; */
-  padding-bottom: 8px;
-}
-.suggest-item {
-  box-shadow: 0 0 0 rgba(0, 0, 0, .2);
-  transition: box-shadow .3s ease-in-out;
-}
-.suggest-item:hover {
-  cursor: pointer;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, .2);
-  transition: box-shadow .3s ease-in-out;
-}
-.suggest-item+.suggest-item {
-  margin-left: 20px;
-}
-::-webkit-scrollbar
-{
-    width: 5px;
-    height: 5px;
-    background-color: #F5F5F5;
-    cursor: pointer;
-}
-/*定义滚动条轨道 内阴影+圆角*/
-::-webkit-scrollbar-track
-{
-    box-shadow: inset 0 0 1px rgba(0,0,0, 0);
-    border-radius: 10px;
-    background-color: #F5F5F5;
-    cursor: pointer;
-}
-
-/*定义滑块 内阴影+圆角*/
-::-webkit-scrollbar-thumb
-{
-    border-radius: 10px;
-    box-shadow: inset 0 0 6px rgba(0,0,0, .3);
-    background-color: rgb(192, 192, 192)
-}
+<style lang="scss">
+@import './index.scss'
 </style>
