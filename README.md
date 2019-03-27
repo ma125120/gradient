@@ -1,5 +1,5 @@
 # gradient
-
+经过实验，生成的图片占用空间约为ps的1/3，ai的3倍。
 ## Project setup
 ```
 yarn install
